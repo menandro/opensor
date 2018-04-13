@@ -15,28 +15,34 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Viewer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="liblink.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
+    <ClCompile Include="test_opensor_viewer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Viewer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Camera.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CgObject.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="glad.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Shader.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
+    <None Include="blackshader.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="blackshader.vert">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="depthshader.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="depthshader.vert">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="myshader2.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="myshader2.vert">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="pointshader.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="pointshader.vert">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

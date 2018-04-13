@@ -20,9 +20,9 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
-    <ProjectGuid>{352CFEAE-2FD0-4AEA-AE1D-D242F761772D}</ProjectGuid>
+    <ProjectGuid>{9D06FA75-5D47-4D00-92A8-4EF549D19D2F}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>opensorviewer</RootNamespace>
+    <RootNamespace>opensorfilereader</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -72,9 +72,6 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <ExecutablePath>D:\dev\bin;$(ExecutablePath)</ExecutablePath>
-    <IncludePath>D:\dev\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\dev\lib64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -84,8 +81,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>D:\dev\include;$(IncludePath)</IncludePath>
     <ExecutablePath>D:\dev\bin;$(ExecutablePath)</ExecutablePath>
+    <IncludePath>D:\dev\include;$(IncludePath)</IncludePath>
     <LibraryPath>D:\dev\lib64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -95,7 +92,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
@@ -157,15 +154,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="liblink.h" />
-    <ClInclude Include="Viewer.h" />
+    <ClInclude Include="filereader.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Camera.cpp" />
-    <ClCompile Include="CgObject.cpp" />
-    <ClCompile Include="glad.c" />
-    <ClCompile Include="Shader.cpp" />
-    <ClCompile Include="Viewer.cpp" />
+    <ClCompile Include="filereader.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
