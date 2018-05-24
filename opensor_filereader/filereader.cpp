@@ -57,7 +57,21 @@ bool sor::FileReader::fileExists(const std::string& filename)
 	return false;
 }
 
+int sor::FileReader::readObj(std::string filename) {
+	return readObj(filename, ArrayFormat::VERTEX_NORMAL_TEXTURE, 1.0f);
+}
+
+int sor::FileReader::readObj(std::string filename, int arrayFormat) {
+	return readObj(filename, arrayFormat, 1.0f);
+}
+
 int sor::FileReader::readObj(std::string filename, float scale) {
+	return readObj(filename, ArrayFormat::VERTEX_NORMAL_TEXTURE, 1.0f);
+}
+
+int sor::FileReader::readObj(std::string filename, int arrayFormat, float scale) {
+	this->arrayFormat = (ArrayFormat)arrayFormat;
+	this->scale = scale;
 	if (!fileExists(filename)) {
 		std::cout << "Object File does not exist." << std::endl;
 		return -1;
@@ -132,43 +146,103 @@ int sor::FileReader::readObj(std::string filename, float scale) {
 			}
 		}
 	}
+	return this->objToArray();
+}
 
-	//convert to 3vert,2tex and triangle format
-	int nTris = obj_tri_vertices.size() / 3;
-	//std::cout << nTris;
-	for (int k = 0; k < nTris; k++) {
-		//vertex 1
-		unsigned int index1 = obj_tri_vertices[3 * k] - 1;
-		vertexArray.push_back(scale*obj_vertx[index1]); //x
-		vertexArray.push_back(scale*obj_verty[index1]); //y
-		vertexArray.push_back(scale*obj_vertz[index1]); //z
-		vertexArray.push_back(obj_u[obj_tri_uvs[3 * k] - 1]);
-		vertexArray.push_back(obj_v[obj_tri_uvs[3 * k] - 1]);
+int sor::FileReader::objToArray() {
+	if (this->arrayFormat == ArrayFormat::VERTEX_TEXTURE) {
+		//convert to 3vert,2tex and triangle format
+		int nTris = obj_tri_vertices.size() / 3;
+		//std::cout << nTris;
+		for (int k = 0; k < nTris; k++) {
+			//vertex 1
+			unsigned int index1 = obj_tri_vertices[3 * k] - 1;
+			vertexArray.push_back(scale*obj_vertx[index1]); //x
+			vertexArray.push_back(scale*obj_verty[index1]); //y
+			vertexArray.push_back(scale*obj_vertz[index1]); //z
+			vertexArray.push_back(obj_u[obj_tri_uvs[3 * k] - 1]);
+			vertexArray.push_back(obj_v[obj_tri_uvs[3 * k] - 1]);
 
-		//vertex 2
-		unsigned int index2 = obj_tri_vertices[3 * k + 1] - 1;
-		vertexArray.push_back(scale*obj_vertx[index2]); //x
-		vertexArray.push_back(scale*obj_verty[index2]); //y
-		vertexArray.push_back(scale*obj_vertz[index2]); //z
-		vertexArray.push_back(obj_u[obj_tri_uvs[3 * k + 1] - 1]);
-		vertexArray.push_back(obj_v[obj_tri_uvs[3 * k + 1] - 1]);
+			//vertex 2
+			unsigned int index2 = obj_tri_vertices[3 * k + 1] - 1;
+			vertexArray.push_back(scale*obj_vertx[index2]); //x
+			vertexArray.push_back(scale*obj_verty[index2]); //y
+			vertexArray.push_back(scale*obj_vertz[index2]); //z
+			vertexArray.push_back(obj_u[obj_tri_uvs[3 * k + 1] - 1]);
+			vertexArray.push_back(obj_v[obj_tri_uvs[3 * k + 1] - 1]);
 
-		//vertex 3
-		unsigned int index3 = obj_tri_vertices[3 * k + 2] - 1;
-		vertexArray.push_back(scale*obj_vertx[index3]); //x
-		vertexArray.push_back(scale*obj_verty[index3]); //y
-		vertexArray.push_back(scale*obj_vertz[index3]); //z
-		vertexArray.push_back(obj_u[obj_tri_uvs[3 * k + 2] - 1]);
-		vertexArray.push_back(obj_v[obj_tri_uvs[3 * k + 2] - 1]);
+			//vertex 3
+			unsigned int index3 = obj_tri_vertices[3 * k + 2] - 1;
+			vertexArray.push_back(scale*obj_vertx[index3]); //x
+			vertexArray.push_back(scale*obj_verty[index3]); //y
+			vertexArray.push_back(scale*obj_vertz[index3]); //z
+			vertexArray.push_back(obj_u[obj_tri_uvs[3 * k + 2] - 1]);
+			vertexArray.push_back(obj_v[obj_tri_uvs[3 * k + 2] - 1]);
 
-		/*indexArray.push_back(obj_tri_vertices[3 * k] - 1);
-		indexArray.push_back(obj_tri_vertices[3 * k + 1] - 1);
-		indexArray.push_back(obj_tri_vertices[3 * k + 2] - 1);*/
+			/*indexArray.push_back(obj_tri_vertices[3 * k] - 1);
+			indexArray.push_back(obj_tri_vertices[3 * k + 1] - 1);
+			indexArray.push_back(obj_tri_vertices[3 * k + 2] - 1);*/
 
-		indexArray.push_back(3 * k);
-		indexArray.push_back(3 * k + 1);
-		indexArray.push_back(3 * k + 2);
+			indexArray.push_back(3 * k);
+			indexArray.push_back(3 * k + 1);
+			indexArray.push_back(3 * k + 2);
+		}
 	}
+
+	else if (this->arrayFormat == ArrayFormat::VERTEX_NORMAL_TEXTURE) {
+		//convert to 3vert, 3norm, 2tex and triangle format
+		int nTris = obj_tri_vertices.size() / 3;
+		//std::cout << nTris;
+		for (int k = 0; k < nTris; k++) {
+			//vertex 1
+			unsigned int index1 = obj_tri_vertices[3 * k] - 1;
+			vertexArray.push_back(scale*obj_vertx[index1]); //x
+			vertexArray.push_back(scale*obj_verty[index1]); //y
+			vertexArray.push_back(scale*obj_vertz[index1]); //z
+
+			vertexArray.push_back(obj_normx[obj_tri_normals[3 * k] - 1]); //nx
+			vertexArray.push_back(obj_normy[obj_tri_normals[3 * k] - 1]); //ny
+			vertexArray.push_back(obj_normz[obj_tri_normals[3 * k] - 1]); //nz
+
+			vertexArray.push_back(obj_u[obj_tri_uvs[3 * k] - 1]);
+			vertexArray.push_back(obj_v[obj_tri_uvs[3 * k] - 1]);
+
+			//vertex 2
+			unsigned int index2 = obj_tri_vertices[3 * k + 1] - 1;
+			vertexArray.push_back(scale*obj_vertx[index2]); //x
+			vertexArray.push_back(scale*obj_verty[index2]); //y
+			vertexArray.push_back(scale*obj_vertz[index2]); //z
+
+			vertexArray.push_back(obj_normx[obj_tri_normals[3 * k + 1] - 1]); //nx
+			vertexArray.push_back(obj_normy[obj_tri_normals[3 * k + 1] - 1]); //ny
+			vertexArray.push_back(obj_normz[obj_tri_normals[3 * k + 1] - 1]); //nz
+
+			vertexArray.push_back(obj_u[obj_tri_uvs[3 * k + 1] - 1]);
+			vertexArray.push_back(obj_v[obj_tri_uvs[3 * k + 1] - 1]);
+
+			//vertex 3
+			unsigned int index3 = obj_tri_vertices[3 * k + 2] - 1;
+			vertexArray.push_back(scale*obj_vertx[index3]); //x
+			vertexArray.push_back(scale*obj_verty[index3]); //y
+			vertexArray.push_back(scale*obj_vertz[index3]); //z
+
+			vertexArray.push_back(obj_normx[obj_tri_normals[3 * k + 2] - 1]); //nx
+			vertexArray.push_back(obj_normy[obj_tri_normals[3 * k + 2] - 1]); //ny
+			vertexArray.push_back(obj_normz[obj_tri_normals[3 * k + 2] - 1]); //nz
+
+			vertexArray.push_back(obj_u[obj_tri_uvs[3 * k + 2] - 1]);
+			vertexArray.push_back(obj_v[obj_tri_uvs[3 * k + 2] - 1]);
+
+			/*indexArray.push_back(obj_tri_vertices[3 * k] - 1);
+			indexArray.push_back(obj_tri_vertices[3 * k + 1] - 1);
+			indexArray.push_back(obj_tri_vertices[3 * k + 2] - 1);*/
+
+			indexArray.push_back(3 * k);
+			indexArray.push_back(3 * k + 1);
+			indexArray.push_back(3 * k + 2);
+		}
+	}
+	return 0;
 }
 
 int sor::FileReader::splitLines(std::fstream objectFile) {

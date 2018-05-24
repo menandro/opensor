@@ -9,80 +9,86 @@ int sor::CommClient::connectToServer(const char* ip_addr) {
 	return connectToServer(ip_addr, port);
 }
 
-int sor::CommClient::connectToServer(const char* ip_addr, const char* port) {
+int sor::CommClient::connectToServer(std::string ip_addr, std::string port) {
+//int sor::CommClient::connectToServer(const char* ip_addr, const char* port) {
 	// Initialize Winsock
 	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (iResult != 0) {
-		printf("WSAStartup failed with error: %d\n", iResult);
+		std::cout << "WSAStartup failed: " << iResult << std::endl;
 		return 1;
 	}
 	
 	struct sockaddr_in client;
 	client.sin_family = AF_INET;
-	inet_pton(AF_INET, ip_addr, &(client.sin_addr));
-	client.sin_port = (unsigned short)std::strtoul(port, NULL, 0);
+	inet_pton(AF_INET, ip_addr.c_str(), &(client.sin_addr));
+	client.sin_port = htons((unsigned short)std::strtoul(port.c_str(), NULL, 0));
 
 	ConnectSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (ConnectSocket == INVALID_SOCKET) {
-		printf("socket failed with error: %ld\n", WSAGetLastError());
+		std::cout << "Error creating socket: " << WSAGetLastError() << std::endl;
 		WSACleanup();
 		return 1;
 	}
-	std::cout << "Socket opened socket: " << ConnectSocket << std::endl;
+
 	// Connect to server.
 	iResult = connect(ConnectSocket, (SOCKADDR*)&client, sizeof(client));
 	if (iResult == SOCKET_ERROR) {
-		printf("FAILED TO CONNECT: %ld\n", WSAGetLastError());
+		std::cout << "Failed to connect to server: " << WSAGetLastError() << std::endl;
 		closesocket(ConnectSocket);
 		ConnectSocket = INVALID_SOCKET;
 	}
-	std::cout << ConnectSocket << " " << INVALID_SOCKET << std::endl;
+	std::cout << "Connected to server. " << std::endl;
 
 	if (ConnectSocket == INVALID_SOCKET) {
-		printf("Unable to connect to server!\n");
+		std::cout << "Unable to connect to server. Server not found." << std::endl;
 		WSACleanup();
 		return 1;
 	}
 }
 
 
-int sor::CommClient::sendToServer(const char *sendbuf) {
-	iResult = send(ConnectSocket, sendbuf, (int)strlen(sendbuf), 0);
+int sor::CommClient::sendToServer(char *sendbuf, int sendbuflen) {
+	iResult = send(ConnectSocket, sendbuf, sendbuflen, 0);
 	if (iResult == SOCKET_ERROR) {
-		printf("send failed with error: %d\n", WSAGetLastError());
+		std::cout << "Send failed: " << WSAGetLastError() << std::endl;
 		closesocket(ConnectSocket);
 		WSACleanup();
 		return 1;
 	}
+	return 0;
+}
 
-	printf("Bytes Sent: %ld\n", iResult);
+int sor::CommClient::receiveFromServer(char *recvbuf, int &recvbuflen) {
+	iResult = recv(ConnectSocket, recvbuf, DEFAULTBUFFERSIZE, 0);
+	if (iResult > 0) {
+		recvbuflen = iResult;
+	}
+	else if (iResult == 0)
+		std::cout << "Connection closing... " << std::endl;
+	else {
+		std::cout << "Receive failed with error " << WSAGetLastError() << std::endl;
+		closesocket(ConnectSocket);
+		WSACleanup();
+		return 1;
+	}
+	return 0;
+}
 
+int sor::CommClient::closeConnection() {
 	// shutdown the connection since no more data will be sent
 	iResult = shutdown(ConnectSocket, SD_SEND);
 	if (iResult == SOCKET_ERROR) {
-		printf("shutdown failed with error: %d\n", WSAGetLastError());
+		std::cout << "Shutdown failed with error: " << WSAGetLastError() << std::endl;
 		closesocket(ConnectSocket);
 		WSACleanup();
 		return 1;
 	}
-
-	// Receive until the peer closes the connection
-	do {
-
-		iResult = recv(ConnectSocket, recvbuf, recvbuflen, 0);
-		if (iResult > 0)
-			printf("Bytes received: %d\n", iResult);
-		else if (iResult == 0)
-			printf("Connection closed\n");
-		else
-			printf("recv failed with error: %d\n", WSAGetLastError());
-
-	} while (iResult > 0);
 
 	// cleanup
 	closesocket(ConnectSocket);
 	WSACleanup();
-
+	ConnectSocket = INVALID_SOCKET;
+	std::cout << "Client closed." << std::endl;
 	return 0;
 }
 

@@ -120,6 +120,11 @@ namespace sor {
 							//properties
 		bool isTextured;
 
+		enum ArrayFormat {
+			VERTEX_NORMAL_TEXTURE,
+			VERTEX_TEXTURE
+		} arrayFormat;
+
 		enum Mode {
 			DEFAULT_MODE,
 			TRIANGLES,
@@ -131,7 +136,8 @@ namespace sor {
 		enum RenderType {
 			DEFAULT_RENDER,
 			BLACK,
-			VERTEX
+			VERTEX,
+			NORMAL,
 		} renderType = RenderType::DEFAULT_RENDER;
 
 		void setRenderType(RenderType renderType);
@@ -143,9 +149,11 @@ namespace sor {
 		void loadTexture(cv::Mat texture);
 		void loadTexture(std::string filename);
 		void loadData(std::vector<float> vertices, std::vector<unsigned int> indices);
+		void loadData(std::vector<float> vertices, std::vector<unsigned int> indices, ArrayFormat arrayFormat);
 
 		void bindTexture();
 		void setMVP(glm::mat4 model, glm::mat4 view, glm::mat4 projection);
+		void setNormalMatrix(glm::mat4 model, glm::mat4 view);
 		void setDrawMode(Mode mode);
 		void draw();
 		void bindBuffer(); //bind shader and vao
@@ -223,12 +231,15 @@ namespace sor {
 
 		//Capturing depth and vertex images
 		void saveFramebuffer(std::string filename);
-		void saveDepthAndVertex(std::string depthFileName, std::string vertexFileName, std::string previewFileName);
+		void saveDepthAndVertex(std::string depthFileName, std::string vertexFileName, 
+			std::string previewFileName, std::string normalVectorFilename);
 		std::string depthFileNameHeader;
 		std::string previewFileNameHeader;
 		std::string vertexFileNameHeader;
+		std::string normalFileNameHeader;
 		int depthFileNameCounter;
 		int vertexFileNameCounter;
+		int normalFileNameCounter;
 		bool vPressStatus;
 		bool captureStatus;
 	};

@@ -124,51 +124,6 @@ void sor::Viewer::depthAndVertexCapture() {
 	}
 }
 
-void sor::Viewer::saveDepthAndVertex(std::string depthFileName, std::string vertexFileName, std::string previewFileName) {
-	//save depth from previous draw
-	cv::Mat depth(scrHeight, scrWidth, CV_8UC4);
-	glPixelStorei(GL_PACK_ROW_LENGTH, depth.step / depth.elemSize());
-	glReadPixels(0, 0, depth.cols, depth.rows, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, depth.data);
-	cv::Mat depthFlipped;
-	cv::flip(depth, depthFlipped, 0);
-	std::vector<cv::Mat> depthArgb; //bgra
-	cv::split(depthFlipped, depthArgb);
-	cv::Mat depthAlpha = cv::Mat::ones(depthFlipped.size(), CV_8U);
-	std::vector<cv::Mat> depthBgra = { depthArgb[3], depthArgb[2], depthArgb[1], depthAlpha };
-	cv::Mat depthBgraOut;
-	cv::merge(depthBgra, depthBgraOut);
-	cv::imshow("depth", depthArgb[3]);
-	cv::imwrite(depthFileName, depthBgraOut);
-	cv::imwrite(previewFileName, depthArgb[3]);
-
-	//render black and vertex and save
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	//get camera transformation
-	glm::mat4 projection, view, model;
-	projection = projectionMat;
-	view = camera->GetViewMatrix();
-	model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0, 0.0, 0.0));
-	// render all cgobjects
-	for (std::vector<CgObject*>::iterator it = cgObject->begin(); it != cgObject->end(); ++it) {
-		if ((*it)->renderType != CgObject::RenderType::DEFAULT_RENDER) {
-			(*it)->bindTexture();
-			(*it)->bindShader();
-			(*it)->setMVP(model, view, projection);
-			(*it)->bindBuffer();
-			(*it)->draw();
-		}
-	}
-	cv::Mat vertex(scrHeight, scrWidth, CV_8UC3);
-	glPixelStorei(GL_PACK_ROW_LENGTH, vertex.step / vertex.elemSize());
-	glReadPixels(0, 0, vertex.cols, vertex.rows, GL_BGR, GL_UNSIGNED_BYTE, vertex.data);
-	cv::Mat vertexFlipped;
-	cv::flip(vertex, vertexFlipped, 0);
-	cv::imshow("vertex", vertexFlipped);
-	cv::imwrite(vertexFileName, vertexFlipped);
-}
-
 void sor::Viewer::run() {
 	makeCurrent();
 	while (!glfwWindowShouldClose(window))
@@ -305,10 +260,77 @@ void sor::Viewer::keyCallback(GLFWwindow* window, int key, int scancode, int act
 		std::string df = viewer->depthFileNameHeader + std::to_string(viewer->depthFileNameCounter) + ".png";
 		std::string pf = viewer->previewFileNameHeader + std::to_string(viewer->depthFileNameCounter) + ".png";
 		std::string vf = viewer->vertexFileNameHeader + std::to_string(viewer->vertexFileNameCounter) + ".png";
-		viewer->saveDepthAndVertex(df, vf, pf);
+		std::string nf = viewer->normalFileNameHeader + std::to_string(viewer->normalFileNameCounter) + ".png";
+		viewer->saveDepthAndVertex(df, vf, pf, nf);
 		viewer->depthFileNameCounter++;
 		viewer->vertexFileNameCounter++;
+		viewer->normalFileNameCounter++;
 	}
+}
+
+void sor::Viewer::saveDepthAndVertex(std::string depthFileName, std::string vertexFileName, 
+		std::string previewFileName, std::string normalVectorFilename) {
+	//save depth from previous draw
+	cv::Mat depth(scrHeight, scrWidth, CV_8UC4);
+	glPixelStorei(GL_PACK_ROW_LENGTH, depth.step / depth.elemSize());
+	glReadPixels(0, 0, depth.cols, depth.rows, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, depth.data);
+	cv::Mat depthFlipped;
+	cv::flip(depth, depthFlipped, 0);
+	std::vector<cv::Mat> depthArgb; //bgra
+	cv::split(depthFlipped, depthArgb);
+	cv::Mat depthAlpha = cv::Mat::ones(depthFlipped.size(), CV_8U);
+	std::vector<cv::Mat> depthBgra = { depthArgb[3], depthArgb[2], depthArgb[1], depthAlpha };
+	//std::vector<cv::Mat> depthBgra = { depthArgb[3], depthArgb[2], depthArgb[1], depthArgb[0] }; //stencil pala ung alpha
+	cv::Mat depthBgraOut;
+	cv::merge(depthBgra, depthBgraOut);
+	cv::imshow("depth", depthArgb[3]);
+	cv::imwrite(depthFileName, depthBgraOut);
+	cv::imwrite(previewFileName, depthArgb[3]);
+
+	//render black and vertex and save
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glm::mat4 projection, view, model;
+	projection = projectionMat;
+	view = camera->GetViewMatrix();
+	model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0, 0.0, 0.0));
+	for (std::vector<CgObject*>::iterator it = cgObject->begin(); it != cgObject->end(); ++it) {
+		if (((*it)->renderType == CgObject::RenderType::VERTEX)||((*it)->renderType == CgObject::RenderType::BLACK)) {
+			(*it)->bindTexture();
+			(*it)->bindShader();
+			(*it)->setMVP(model, view, projection);
+			(*it)->bindBuffer();
+			(*it)->draw();
+		}
+	}
+	cv::Mat vertex(scrHeight, scrWidth, CV_8UC3);
+	glPixelStorei(GL_PACK_ROW_LENGTH, vertex.step / vertex.elemSize());
+	glReadPixels(0, 0, vertex.cols, vertex.rows, GL_BGR, GL_UNSIGNED_BYTE, vertex.data);
+	cv::Mat vertexFlipped;
+	cv::flip(vertex, vertexFlipped, 0);
+	cv::imshow("vertex", vertexFlipped);
+	cv::imwrite(vertexFileName, vertexFlipped);
+
+
+	//render normal vectors and save
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	for (std::vector<CgObject*>::iterator it = cgObject->begin(); it != cgObject->end(); ++it) {
+		if ((*it)->renderType == CgObject::RenderType::NORMAL) {
+			(*it)->bindTexture();
+			(*it)->bindShader();
+			(*it)->setMVP(model, view, projection);
+			(*it)->bindBuffer();
+			(*it)->draw();
+		}
+	}
+	cv::Mat normal(scrHeight, scrWidth, CV_8UC3);
+	glPixelStorei(GL_PACK_ROW_LENGTH, vertex.step / vertex.elemSize());
+	glReadPixels(0, 0, normal.cols, normal.rows, GL_BGR, GL_UNSIGNED_BYTE, normal.data);
+	cv::Mat normalFlipped;
+	cv::flip(normal, normalFlipped, 0);
+	cv::imshow("normal", normalFlipped);
+	cv::imwrite(normalVectorFilename, normalFlipped);
 }
 
 void sor::Viewer::framebufferSizeCallback(GLFWwindow* window, int width, int height)

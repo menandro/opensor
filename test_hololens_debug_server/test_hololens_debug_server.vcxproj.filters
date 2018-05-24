@@ -15,37 +15,8 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="test_opensor_viewer.cpp">
+    <ClCompile Include="test_hololens_debug_server.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="blackshader.frag">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="blackshader.vert">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="depthshader.frag">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="depthshader.vert">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="myshader2.frag">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="myshader2.vert">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="pointshader.frag">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="pointshader.vert">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="viewnormal.frag">
-      <Filter>Resource Files</Filter>
-    </None>
   </ItemGroup>
 </Project>

@@ -18,25 +18,52 @@ void sor::CgObject::loadShader(const char *vertexShader, const char *fragmentSha
 }
 
 void sor::CgObject::loadData(std::vector<float> vertices, std::vector<unsigned int> indices) {
+	arrayFormat = ArrayFormat::VERTEX_NORMAL_TEXTURE;
+	loadData(vertices, indices, arrayFormat);
+}
+
+void sor::CgObject::loadData(std::vector<float> vertices, std::vector<unsigned int> indices, ArrayFormat arrayFormat) {
 	nTriangles = indices.size();
 	this->bindBuffer();
 
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+	if (arrayFormat == ArrayFormat::VERTEX_NORMAL_TEXTURE) {
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
 
-	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-	// color attribute
-	//glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-	//glEnableVertexAttribArray(1);
+		// position attribute
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(0);
 
-	// texture coord attribute
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
+		// normal attribute
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+		glEnableVertexAttribArray(1);
+
+		// texture coord attribute
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+		glEnableVertexAttribArray(2);
+	}
+
+	else if (arrayFormat == ArrayFormat::VERTEX_TEXTURE) {
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
+
+		// position attribute
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(0);
+		// color attribute
+		//glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+		//glEnableVertexAttribArray(1);
+
+		// texture coord attribute
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+		glEnableVertexAttribArray(1);
+	}
 }
 
 void sor::CgObject::loadTexture(std::string filename) {
@@ -86,7 +113,15 @@ void sor::CgObject::bindShader() {
 	this->shader->use();
 }
 
+void sor::CgObject::setNormalMatrix(glm::mat4 model, glm::mat4 view) {
+	glm::mat3x3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(view*model)));
+	shader->setMat3("normalMatrix", normalMatrix);
+}
+
 void sor::CgObject::setMVP(glm::mat4 model, glm::mat4 view, glm::mat4 projection) {
+	shader->setMat4("mvpMatrix", projection*view*model);
+	glm::mat3x3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(view*model)));
+	shader->setMat3("normalMatrix", normalMatrix);
 	shader->setMat4("projection", projection);
 	shader->setMat4("view", view);
 	shader->setMat4("model", model);
