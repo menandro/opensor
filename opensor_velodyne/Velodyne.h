@@ -12,8 +12,12 @@
 #include <boost/foreach.hpp>
 #include <boost/filesystem.hpp>
 
+#include <pcap.h>
+
 #define BOOST_LIB_PATH "D:/dev/staticlib/boost_1_67_0/stage/lib/"
 #pragma comment(lib, BOOST_LIB_PATH "libboost_system-vc141-mt-x64-1_67.lib")
+#pragma comment(lib, "D:/dev/lib64/Packet.lib")
+#pragma comment(lib, "D:/dev/lib64/wpcap.lib")
 
 struct CalibParams {
 	unsigned char laserId;
@@ -70,17 +74,33 @@ enum ProductModelTable : uint8_t {
 	VLS128 = 0x63
 };
 
+enum CaptureMode {
+	UDP, TCP, PCAP
+};
+
 class Velodyne {
 public:
+	// Reading UDP broadcast
 	Velodyne(boost::asio::ip::address& address, unsigned short port);
 	Velodyne(const char *address_str, unsigned short port);
+
+	// Reading PCAP
+	Velodyne(const std::string& filename);
+
+	//Reading TCP (from velodyne dedicated server of MRBUS)
+	// TODO
+
 	~Velodyne();
+
+	CaptureMode captureMode;
 
 	// Common
 	boost::asio::io_service ioService;
 	boost::asio::ip::udp::socket* socket = nullptr;
 	boost::asio::ip::address address;
 	unsigned short port = 2368;
+	pcap_t* pcap = nullptr;
+	std::string filename = "";
 
 	std::mutex mutex;
 	std::thread* thread = nullptr;
@@ -88,9 +108,14 @@ public:
 	std::queue<std::vector<Laser>> queue;
 
 	bool isCalibrated = false;
+
 	bool open(boost::asio::ip::address& address, const unsigned short port);
+	bool open(const std::string& filename);
+
 	void send(std::string& msg);
 	void capture();
+	void capturePCAP();
+
 	ProductModel model = VLP16; //default to VLP16 model
 	bool isOpen();
 	bool isRunning();

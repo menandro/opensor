@@ -73,7 +73,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>D:\dev\staticlib\boost_1_67_0;D:\dev\include;D:\dev\c-projects\OpenSor;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\dev\staticlib\boost_1_67_0\stage\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>D:\dev\lib64;D:\dev\staticlib\boost_1_67_0\stage\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>

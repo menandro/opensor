@@ -3,6 +3,7 @@
 opensor.sdf
 opensor/data/*
 test_opensor_viewer/data/*
+data/*
 
 # User-specific files
 *.suo

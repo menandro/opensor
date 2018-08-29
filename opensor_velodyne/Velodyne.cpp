@@ -3,13 +3,20 @@
 
 Velodyne::Velodyne(boost::asio::ip::address& address, unsigned short port = 2368)
 {
+	this->captureMode = UDP;
 	this->open(address, port);
 }
 
 Velodyne::Velodyne(const char *address_str, unsigned short port = 2368)
 {
+	this->captureMode = UDP;
 	boost::asio::ip::address address = boost::asio::ip::address::from_string(address_str);
 	this->open(address, port);
+}
+
+Velodyne::Velodyne(const std::string& filename) {
+	this->captureMode = PCAP;
+	this->open(filename);
 }
 
 Velodyne::~Velodyne() {
@@ -116,6 +123,44 @@ bool Velodyne::open(boost::asio::ip::address& address, unsigned short port = 236
 	return true;
 }
 
+bool Velodyne::open(const std::string& filename) {
+	if (isRunning()) {
+		close();
+	}
+
+	// Open PCAP File
+	char error[PCAP_ERRBUF_SIZE];
+	pcap_t* pcap = pcap_open_offline(filename.c_str(), error);
+	if (!pcap) {
+		throw std::runtime_error(error);
+		return false;
+	}
+
+	// Convert PCAP_NETMASK_UNKNOWN to 0xFFFFFFFF
+	struct bpf_program filter;
+	std::ostringstream oss;
+	if (pcap_compile(pcap, &filter, oss.str().c_str(), 0, 0xffffffff) == -1) {
+		throw std::runtime_error(pcap_geterr(pcap));
+		return false;
+	}
+
+	if (pcap_setfilter(pcap, &filter) == -1) {
+		throw std::runtime_error(pcap_geterr(pcap));
+		return false;
+	}
+
+	this->pcap = pcap;
+	this->filename = filename;
+
+	// Start capture thread
+	run = true;
+	thread = new std::thread(std::bind(&Velodyne::capturePCAP, this));
+
+	std::cerr << "Velodyne capturePCAP successfully opened." << std::endl;
+	return true;
+
+}
+
 void Velodyne::send(std::string& msg) {
 	boost::asio::ip::udp::endpoint me;
 	socket->send_to(boost::asio::buffer(msg, msg.size()), me);
@@ -124,7 +169,18 @@ void Velodyne::send(std::string& msg) {
 bool Velodyne::isOpen()
 {
 	std::lock_guard<std::mutex> lock(mutex);
-	return ((socket && socket->is_open()));
+	bool isSocketMode = (captureMode == UDP) || (captureMode == TCP);
+	bool isPcapMode = (captureMode == PCAP);
+
+	if (isSocketMode && socket && socket->is_open()) {
+		return true;
+	}
+	else if (isPcapMode && (pcap != nullptr)) {
+		return true;
+	}
+	else
+		return false;
+	//return  (socket && socket->is_open());
 }
 
 bool Velodyne::isRunning()
@@ -170,6 +226,42 @@ void Velodyne::capture() {
 	std::cout << "Capture thread ended." << std::endl;
 	run = false;
 	//size_t reply_length = this->socket.receive_from(boost::asio::buffer(packet, 1206), senderEndPoint);
+}
+
+void Velodyne::capturePCAP() {
+	run = true;
+	struct timeval last_time = { 0 };
+	std::vector<Laser> * lasers = new std::vector<Laser>();
+	double lastAzimuth = 0.0;
+
+	while (run) {
+		// Retreve header and data from PCAP
+		struct pcap_pkthdr* header;
+		const unsigned char * data;
+		const int ret = pcap_next_ex(pcap, &header, &data);
+		if (ret <= 0) {
+			break;
+		}
+
+		// Check packet data size
+		if ((header->len - 42) != 1206) {
+			continue;
+		}
+
+		const DataPacket* packet = reinterpret_cast<const DataPacket*>(data + 42);
+
+		switch (this->model) {
+		case ProductModelTable::HDL64:
+			convertPacketHDL64(packet, lasers, lastAzimuth);
+			break;
+		case ProductModelTable::VLP16:
+			convertPacketVLP16(packet, lasers, lastAzimuth);
+			break;
+		default:
+			break;
+		}
+	}
+	//run = false;
 }
 
 void Velodyne::convertPacketHDL64(const DataPacket * packet, std::vector<Laser> *lasers, double &lastAzimuth) {
@@ -393,5 +485,11 @@ void Velodyne::close()
 	if (ioService.stopped()) {
 		ioService.stop();
 		ioService.reset();
+	}
+
+	if (pcap) {
+		pcap_close(pcap);
+		pcap = nullptr;
+		filename = "";
 	}
 }
