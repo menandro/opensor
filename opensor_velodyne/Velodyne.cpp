@@ -1,30 +1,48 @@
 #include "Velodyne.h"
 #include <iostream>
 
-Velodyne::Velodyne(boost::asio::ip::address& address, unsigned short port = 2368)
+sor::Velodyne::Velodyne(const char *address_str, unsigned short port, CaptureMode captureMode) {
+	this->captureMode = captureMode;
+	boost::asio::ip::address address = boost::asio::ip::address::from_string(address_str);
+
+	if (captureMode == CaptureMode::TCP) {
+		this->openTCP(address, port);
+	}
+	else if (captureMode == CaptureMode::UDP) {
+		this->open(address, port);
+	}
+	else if (captureMode == CaptureMode::PCAP) {
+		std::cout << "Can't use IP address and port with PCAP. Use Velodyne(string filename) instead." << std::endl;
+	}
+	else {
+		this->open(address, port);
+	}
+}
+
+sor::Velodyne::Velodyne(boost::asio::ip::address& address, unsigned short port = 2368)
 {
 	this->captureMode = UDP;
 	this->open(address, port);
 }
 
-Velodyne::Velodyne(const char *address_str, unsigned short port = 2368)
+sor::Velodyne::Velodyne(const char *address_str, unsigned short port = 2368)
 {
 	this->captureMode = UDP;
 	boost::asio::ip::address address = boost::asio::ip::address::from_string(address_str);
 	this->open(address, port);
 }
 
-Velodyne::Velodyne(const std::string& filename) {
+sor::Velodyne::Velodyne(const std::string& filename) {
 	this->captureMode = PCAP;
 	this->open(filename);
 }
 
-Velodyne::~Velodyne() {
+sor::Velodyne::~Velodyne() {
 	close();
 	//delete packet;
 }
 
-void Velodyne::calibFileRead(const char *filename)
+void sor::Velodyne::calibFileRead(const char *filename)
 {
 	using boost::property_tree::ptree;
 	ptree pt;
@@ -73,7 +91,55 @@ void Velodyne::calibFileRead(const char *filename)
 	std::cout << "DONE." << std::endl;
 }
 
-bool Velodyne::open(boost::asio::ip::address& address, unsigned short port = 2368)
+bool sor::Velodyne::openTCP(boost::asio::ip::address& address, unsigned short port)
+{
+	this->calibFileRead("default.xml");
+
+	if (isRunning()) {
+		std::cout << "Velodyne capture already running." << std::endl;
+		//close();
+	}
+
+	this->address = address;
+	this->port = port;
+
+	boost::asio::ip::tcp::endpoint endpoint(this->address, this->port);
+	this->tcpsocket = new boost::asio::ip::tcp::socket(ioService);
+	tcpsocket->connect(endpoint);
+	/*try {
+		this->tcpsocket = new boost::asio::ip::tcp::socket(ioService, boost::asio::ip::tcp::endpoint(this->address, this->port));
+	}
+	catch (const std::exception& e) {
+		std::cerr << "Failed to open socket: [" << e.what() << "]" << std::endl;
+		std::cerr << "Trying different address..." << std::endl;
+		delete tcpsocket;
+
+		try {
+			tcpsocket = new boost::asio::ip::tcp::socket(ioService,
+				boost::asio::ip::tcp::endpoint(boost::asio::ip::address_v4::any(), this->port));
+			std::cout << "Opened socket from tcp in port: " << this->port << std::endl;
+		}
+		catch (const std::exception& e) {
+			std::cerr << "Failed to open socket:: [" << e.what() << "]" << std::endl;
+			return false;
+		}
+	}
+	*/
+	try {
+		ioService.run();
+	}
+	catch (const std::exception& e) {
+		std::cerr << "Failed to start io service: [" << e.what() << "]" << std::endl;
+		return false;
+	}
+
+	thread = new std::thread(std::bind(&Velodyne::captureTCP, this));
+
+	std::cerr << "Velodyne capture successfully opened." << std::endl;
+	return true;
+}
+
+bool sor::Velodyne::open(boost::asio::ip::address& address, unsigned short port = 2368)
 {
 	this->calibFileRead("default.xml");
 	//this->vertAngle = std::vector<double>(64);
@@ -123,7 +189,7 @@ bool Velodyne::open(boost::asio::ip::address& address, unsigned short port = 236
 	return true;
 }
 
-bool Velodyne::open(const std::string& filename) {
+bool sor::Velodyne::open(const std::string& filename) {
 	if (isRunning()) {
 		close();
 	}
@@ -161,18 +227,21 @@ bool Velodyne::open(const std::string& filename) {
 
 }
 
-void Velodyne::send(std::string& msg) {
+void sor::Velodyne::send(std::string& msg) {
 	boost::asio::ip::udp::endpoint me;
 	socket->send_to(boost::asio::buffer(msg, msg.size()), me);
 }
 
-bool Velodyne::isOpen()
+bool sor::Velodyne::isOpen()
 {
 	std::lock_guard<std::mutex> lock(mutex);
 	bool isSocketMode = (captureMode == UDP) || (captureMode == TCP);
 	bool isPcapMode = (captureMode == PCAP);
 
 	if (isSocketMode && socket && socket->is_open()) {
+		return true;
+	}
+	else if (isSocketMode && tcpsocket && tcpsocket->is_open()) {
 		return true;
 	}
 	else if (isPcapMode && (pcap != nullptr)) {
@@ -183,14 +252,56 @@ bool Velodyne::isOpen()
 	//return  (socket && socket->is_open());
 }
 
-bool Velodyne::isRunning()
+bool sor::Velodyne::isRunning()
 {
 	// Returns True when Thread is Running or Queue is Not Empty
 	std::lock_guard<std::mutex> lock(mutex);
 	return (run || !queue.empty());
 }
 
-void Velodyne::capture() {
+void sor::Velodyne::captureTCP() {
+	run = true;
+	unsigned char data[1206];
+	//boost::asio::ip::tcp::endpoint sender;
+	std::vector<Laser> * lasers = new std::vector<Laser>();
+	double lastAzimuth = 0.0;
+
+	while (tcpsocket->is_open() && ioService.stopped()) {
+		//printf("*");
+		boost::system::error_code error;
+
+		// Receive 1206 bytes
+		
+		const size_t length = boost::asio::read(*tcpsocket, boost::asio::buffer(data, sizeof(data)), error);
+
+		if (error == boost::asio::error::eof) {
+			break;
+		}
+		if (length != 1206) {
+			continue;
+		}
+
+		// Convert to DataPacket Structure
+		const DataPacket* packet = reinterpret_cast<const DataPacket*>(data);
+
+		switch (this->model) {
+		case ProductModelTable::HDL64:
+			convertPacketHDL64(packet, lasers, lastAzimuth);
+			break;
+		case ProductModelTable::VLP16:
+			convertPacketVLP16(packet, lasers, lastAzimuth);
+			break;
+		default:
+			break;
+		}
+	}
+
+	std::cout << "Capture thread ended." << std::endl;
+	run = false;
+	//size_t reply_length = this->socket.receive_from(boost::asio::buffer(packet, 1206), senderEndPoint);
+}
+
+void sor::Velodyne::capture() {
 	run = true;
 	unsigned char data[1206];
 	boost::asio::ip::udp::endpoint sender;
@@ -228,7 +339,7 @@ void Velodyne::capture() {
 	//size_t reply_length = this->socket.receive_from(boost::asio::buffer(packet, 1206), senderEndPoint);
 }
 
-void Velodyne::capturePCAP() {
+void sor::Velodyne::capturePCAP() {
 	run = true;
 	struct timeval last_time = { 0 };
 	std::vector<Laser> * lasers = new std::vector<Laser>();
@@ -264,7 +375,7 @@ void Velodyne::capturePCAP() {
 	//run = false;
 }
 
-void Velodyne::convertPacketHDL64(const DataPacket * packet, std::vector<Laser> *lasers, double &lastAzimuth) {
+void sor::Velodyne::convertPacketHDL64(const DataPacket * packet, std::vector<Laser> *lasers, double &lastAzimuth) {
 	//Check Data
 	/*for (int i = 0; i < 12; i++) {
 	printf("id %d: %u\n", i, packet->firingData[i].rotationalPosition);
@@ -320,7 +431,7 @@ void Velodyne::convertPacketHDL64(const DataPacket * packet, std::vector<Laser> 
 				laser.azimuth = azimuth / 100.0 - calibParams[laserIndex % MAX_NLASERS_HDL64 + blockOffset].rotCorrection;
 				laser.vertical = calibParams[laserIndex % MAX_NLASERS_HDL64 + blockOffset].vertCorrection;
 				if (dataBlock.laserReturns[laserIndex % MAX_NLASERS_HDL64].distance < 1.00) {
-					laser.distance = 0.0;
+					laser.distance = 0;
 				}
 				else {
 					laser.distance = dataBlock.laserReturns[laserIndex % MAX_NLASERS_HDL64].distance 
@@ -331,7 +442,7 @@ void Velodyne::convertPacketHDL64(const DataPacket * packet, std::vector<Laser> 
 				laser.azimuth = azimuth / 100.0;
 				laser.vertical = vertCorrHDL64[laserIndex % MAX_NLASERS_HDL64];
 				if (dataBlock.laserReturns[laserIndex % MAX_NLASERS_HDL64].distance < 1.00) {
-					laser.distance = 0.0;
+					laser.distance = 0;
 				}
 				else {
 					laser.distance = dataBlock.laserReturns[laserIndex % MAX_NLASERS_HDL64].distance;
@@ -353,7 +464,7 @@ void Velodyne::convertPacketHDL64(const DataPacket * packet, std::vector<Laser> 
 	}
 }
 
-void Velodyne::convertPacketVLP16(const DataPacket * packet, std::vector<Laser> *lasers, double &lastAzimuth) {
+void sor::Velodyne::convertPacketVLP16(const DataPacket * packet, std::vector<Laser> *lasers, double &lastAzimuth) {
 	// Fetch One Full Rotation
 	// Calculate interpolation offset of azimuth assuming constant rotation speed
 	double interpolatedAzimuthOffset = 0.0;
@@ -403,7 +514,7 @@ void Velodyne::convertPacketVLP16(const DataPacket * packet, std::vector<Laser> 
 				}
 			}
 
-			if (isCalibrated) {
+			if (isCalibrated) { //TODO: Correct correction data types (double to ushort)
 				laser.azimuth = azimuth / 100.0 - calibParams[laserIndex % MAX_NLASERS_VLP16].rotCorrection;
 				laser.vertical = calibParams[laserIndex % MAX_NLASERS_VLP16].vertCorrection;
 				if (dataBlock.laserReturns[laserIndex % MAX_NLASERS_VLP16].distance < 1.00) {
@@ -438,7 +549,7 @@ void Velodyne::convertPacketVLP16(const DataPacket * packet, std::vector<Laser> 
 	}
 }
 
-void Velodyne::retrieve(std::vector<Laser>& lasers, const bool sort = false)
+void sor::Velodyne::retrieve(std::vector<Laser>& lasers, const bool sort = false)
 {
 	// Pop One Rotation Data from Queue
 	if (mutex.try_lock()) {
@@ -456,13 +567,13 @@ void Velodyne::retrieve(std::vector<Laser>& lasers, const bool sort = false)
 }
 
 // Operator Retrieve Capture Data with Sort
-void Velodyne:: operator >> (std::vector<Laser>& lasers)
+void sor::Velodyne:: operator >> (std::vector<Laser>& lasers)
 {
 	// Retrieve Capture Data
 	retrieve(lasers, false);
 }
 
-void Velodyne::close()
+void sor::Velodyne::close()
 {
 	std::lock_guard<std::mutex> lock(mutex);
 

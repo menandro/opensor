@@ -3,6 +3,8 @@
 opensor.sdf
 opensor/data/*
 test_opensor_viewer/data/*
+test_opensor_reconflow/data/*
+test_opensor_reconflow/data*
 data/*
 
 # User-specific files

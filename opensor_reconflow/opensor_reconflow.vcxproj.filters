@@ -1,0 +1,126 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Kernel Files">
+      <UniqueIdentifier>{f55e2935-d807-422a-99f7-a5c7d5c4e9f0}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Cudaflow.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lib_link.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Reconflow.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="Cudaflow.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Inpainting.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="LDCudaflow.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Reconflow.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="addKernel.cu">
+      <Filter>Kernel Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="computeDeriv.cu">
+      <Filter>Kernel Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="computeDerivatives.cu">
+      <Filter>Kernel Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="computeDerivativesPatch.cu">
+      <Filter>Kernel Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="correlation.cu">
+      <Filter>Kernel Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="downscale.cu">
+      <Filter>Kernel Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="flowToHSV.cu">
+      <Filter>Kernel Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="medianFilter.cu">
+      <Filter>Kernel Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="rgbToGray.cu">
+      <Filter>Kernel Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="solve3dMinimalArea.cu">
+      <Filter>Kernel Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="solveBK.cu">
+      <Filter>Kernel Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="solveDataCharb.cu">
+      <Filter>Kernel Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="solveDataCharbForTV.cu">
+      <Filter>Kernel Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="solveDataCharbForTVGrad.cu">
+      <Filter>Kernel Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="solveDataL1.cu">
+      <Filter>Kernel Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="solveDataL1Inpaint.cu">
+      <Filter>Kernel Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="solveReconDataL1.cu">
+      <Filter>Kernel Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="solveSceneFlow.cu">
+      <Filter>Kernel Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="solveSmoothDualTVGlobal.cu">
+      <Filter>Kernel Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="solveSmoothGaussianGlobal.cu">
+      <Filter>Kernel Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="solveSmoothGaussianTex.cu">
+      <Filter>Kernel Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="solveSmoothMedianGlobal.cu">
+      <Filter>Kernel Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="solveUcSk.cu">
+      <Filter>Kernel Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="solveUVProj.cu">
+      <Filter>Kernel Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="upscale.cu">
+      <Filter>Kernel Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="warpImage.cu">
+      <Filter>Kernel Files</Filter>
+    </CudaCompile>
+  </ItemGroup>
+</Project>
