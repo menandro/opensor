@@ -218,7 +218,7 @@ int sor::ReconFlow::solveReconFlow(cv::Mat rot0, cv::Mat tr0, cv::Mat rot1, cv::
 	checkCudaErrors(cudaMemset(d_Z, 0, dataSize));
 	checkCudaErrors(cudaMemset(d_sku, 0, dataSize));
 	checkCudaErrors(cudaMemset(d_skv, 0, dataSize));
-
+	
 	for (int level = nLevels - 1; level >= 0; level--) {
 		//checkCudaErrors(cudaMemset(d_sku, 0, dataSize));
 		//checkCudaErrors(cudaMemset(d_skv, 0, dataSize));
@@ -228,6 +228,7 @@ int sor::ReconFlow::solveReconFlow(cv::Mat rot0, cv::Mat tr0, cv::Mat rot1, cv::
 		double *Q = (double*)pose1.ptr();
 		double *K0 = (double*)pK0[level].ptr();
 		double *K1 = (double*)pK1[level].ptr();
+		
 
 		if ((method == METHODR_TVL1_MS_FN) || (method == METHODR_TVL1_MS_FNSPARSE)) {
 			//downscale ufn and vfn
@@ -352,6 +353,7 @@ int sor::ReconFlow::solveReconFlow(cv::Mat rot0, cv::Mat tr0, cv::Mat rot1, cv::
 
 				// Solve uproj
 				//float lambdaf_val = lambdaf* ((float)iter / (float)nSolverIters);
+				//std::cout << "a" << std::endl;
 				SolveUVProj(d_u, d_v, d_dumed, d_dvmed,
 					d_uc, d_vc, d_sku, d_skv,
 					pW[level], pH[level], pS[level],

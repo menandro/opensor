@@ -13,11 +13,21 @@ void SolveUVProjKernel(const float *u0, const float *v0,
 	int ix = blockIdx.x * blockDim.x + threadIdx.x;
 	int iy = blockIdx.y * blockDim.y + threadIdx.y;        // current row 
 
-	if ((iy < height) && (ix < width))
-	{
-		int pos = ix + iy * stride;      // current pixel index
-		uproj1[pos] = (lambdaf*uc0[pos] + alphaProj*(u0[pos] + du0[pos] + sku0[pos])) / (lambdaf + alphaProj);
-		vproj1[pos] = (lambdaf*vc0[pos] + alphaProj*(v0[pos] + dv0[pos] + skv0[pos])) / (lambdaf + alphaProj);
+	if ((lambdaf + alphaProj ) != 0.0f) {
+		if ((iy < height) && (ix < width))
+		{
+			int pos = ix + iy * stride;      // current pixel index
+			uproj1[pos] = (lambdaf*uc0[pos] + alphaProj * (u0[pos] + du0[pos] + sku0[pos])) / (lambdaf + alphaProj);
+			vproj1[pos] = (lambdaf*vc0[pos] + alphaProj * (v0[pos] + dv0[pos] + skv0[pos])) / (lambdaf + alphaProj);
+		}
+	}
+	else {
+		if ((iy < height) && (ix < width))
+		{
+			int pos = ix + iy * stride;
+			uproj1[pos] = u0[pos];
+			vproj1[pos] = v0[pos];
+		}
 	}
 }
 

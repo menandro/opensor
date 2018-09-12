@@ -156,9 +156,18 @@ void Solve3dMinimalAreaKernel(const float *uproj0, const float *vproj0,
 			+ (Xy*Xy + Yy*Yy)*Zibar + (Xx*Xx + Yx*Yx)*Zjbar)
 			- dz;
 
-		float Xsub = (E11*b1 + E12*b2 + E13*b3) / detA;
-		float Ysub = (E21*b1 + E22*b2 + E23*b3) / detA;
-		float Zsub = (E31*b1 + E32*b2 + E33*b3) / detA;
+		float Xsub, Ysub, Zsub;
+		if (detA != 0.0f) {
+			Xsub = (E11*b1 + E12 * b2 + E13 * b3) / detA;
+			Ysub = (E21*b1 + E22 * b2 + E23 * b3) / detA;
+			Zsub = (E31*b1 + E32 * b2 + E33 * b3) / detA;
+		}
+		else {
+			X[pos] = X0[pos];
+			Y[pos] = Y0[pos];
+			Z[pos] = Z0[pos];
+		}
+		
 
 		//if ((abs(Xsub) >  200) || (abs(Ysub) > 200) || (abs(Zsub) > 200)) {
 		/*if ((isinf(Zsub)) || (isnan(Zsub))) {
