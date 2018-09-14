@@ -32,6 +32,11 @@ namespace sor {
 		float *d_Xmed;
 		float *d_Ymed;
 		float *d_Zmed;
+		float *d_Xsp; //sp means sparse
+		float *d_Ysp;
+		float *d_Zsp;
+		float *d_spmask; //sparse mask
+		
 
 		cv::Mat intrinsic0;
 		cv::Mat intrinsic1;
@@ -52,26 +57,37 @@ namespace sor {
 		static const int METHODR_TVCHARBGRAD_MS = 18;
 		static const int METHODR_TVCHARBGRAD_MS_FN = 19;
 		static const int METHODR_TVL1_MS_FNSPARSE = 20; //tvl1 with 3dms and sparsified flownet as sparse input
+		static const int METHODR_TVL1_MS_FNSPARSE_LIDAR = 21;
+		static const int METHODR_TVL1_MS_FN_LIDAR = 22;
 
-														//theta for 3D
-		float thetaProj;
+		
+		float thetaProj; //theta for 3D
 		float alphaProj;
 		float lambdaf;
 		float lambdams;
+		float lambdasp;
 
-		//initialization without large displacement
+		// Initialization without flownet
 		int _initializeR(int width, int height, int channels, int nLevels, float scale, int method,
 			float lambda, float lambdagrad, float lamdbaf, float lambdams,
 			float alphaTv, float alphaProj, float tau,
 			int nWarpIters, int nSolverIters);
 
-		//initialization with large displacement
+		// Initialization with flownet
 		int initializeR(int width, int height, int channels, int nLevels, float scale, int method,
 			float lambda, float lambdagrad, float lamdbaf, float lambdams,
 			float alphaTv, float alphaProj, float alphaFn, float tau,
 			int nWarpIters, int nSolverIters);
 
+		// Initialization with flownet and lidar
+		int initializeR(int width, int height, int channels, int nLevels, float scale, int method,
+			float lambda, float lambdagrad, float lamdbaf, float lambdams, float lambdasp,
+			float alphaTv, float alphaProj, float alphaFn, float tau,
+			int nWarpIters, int nSolverIters);
+
 		int copy3dToHost(cv::Mat &X, cv::Mat &Y, cv::Mat &Z);
+		int copySparse3dToDevice(cv::Mat &X, cv::Mat &Y, cv::Mat &Z, cv::Mat &spmask);
+		int copySparse3dToDevice(cv::Mat &X, cv::Mat &Y, cv::Mat &Z);
 		int setCameraMatrices(cv::Mat intrinsic);
 		int setCameraMatrices(cv::Mat intrinsic0, cv::Mat intrinsic1);
 
@@ -130,8 +146,18 @@ namespace sor {
 			float lambdaf, float alphaProj,
 			float *uproj1, float *vproj1);
 
+		// Fdata + Fms
 		void Solve3dMinimalArea(const float *uproj0, const float *vproj0,
 			const float *X0, const float *Y0, const float *Z0,
+			double *P, double *Q, //camera matrices
+			float lambdaf, float lambdams,
+			int w, int h, int s,
+			float *X, float *Y, float *Z);
+
+		// Fdata + Fms + Fsparse
+		void Solve3dLidar(const float *uproj0, const float *vproj0,
+			const float *X0, const float *Y0, const float *Z0,
+			const float *Xsp, const float *Ysp, const float *Zsp,
 			double *P, double *Q, //camera matrices
 			float lambdaf, float lambdams,
 			int w, int h, int s,

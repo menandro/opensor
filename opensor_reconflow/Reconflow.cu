@@ -12,6 +12,26 @@ sor::ReconFlow::ReconFlow(int BlockWidth, int BlockHeight, int StrideAlignment) 
 	this->StrideAlignment = StrideAlignment;
 }
 
+// Initialization with sparse lidar prior and large displacement optical flow
+int sor::ReconFlow::initializeR(int width, int height, int channels, int nLevels, float scale, int method,
+	float lambda = 100.0f, float lambdagrad = 400.0f, float lambdaf = 100.0f, float lambdams = 100.0f, float lambdasp = 1.0f,
+	float alphaTv = 3.0f, float alphaProj = 1.0f, float alphaFn = 0.5f, float tau = 0.25f,
+	int nWarpIters = 1, int nSolverIters = 100)
+{
+	this->lambdasp = lambdasp;
+	this->initializeR(width, height, channels, nLevels, scale, method,
+		lambda, lambdagrad, lambdaf, lambdams,
+		alphaTv, alphaProj, alphaFn, tau,
+		nWarpIters, nSolverIters);
+
+	checkCudaErrors(cudaMalloc(&d_Xsp, dataSize));
+	checkCudaErrors(cudaMalloc(&d_Ysp, dataSize));
+	checkCudaErrors(cudaMalloc(&d_Zsp, dataSize));
+	checkCudaErrors(cudaMalloc(&d_spmask, dataSize));
+	return 0;
+}
+
+// Initialization with large displacement
 int sor::ReconFlow::initializeR(int width, int height, int channels, int nLevels, float scale, int method,
 	float lambda = 100.0f, float lambdagrad = 400.0f, float lambdaf = 100.0f, float lambdams = 100.0f,
 	float alphaTv = 3.0f, float alphaProj = 1.0f, float alphaFn = 0.5f, float tau = 0.25f,
@@ -66,6 +86,24 @@ int sor::ReconFlow::copy3dToHost(cv::Mat &X, cv::Mat &Y, cv::Mat &Z) {
 	checkCudaErrors(cudaMemcpy((float *)X.ptr(), d_X, stride * height * sizeof(float), cudaMemcpyDeviceToHost));
 	checkCudaErrors(cudaMemcpy((float *)Y.ptr(), d_Y, stride * height * sizeof(float), cudaMemcpyDeviceToHost));
 	checkCudaErrors(cudaMemcpy((float *)Z.ptr(), d_Z, stride * height * sizeof(float), cudaMemcpyDeviceToHost));
+	return 0;
+}
+
+
+
+// Copy sparse lidar data (converted to cv matrix, separated by xyz channel) to GPU
+int sor::ReconFlow::copySparse3dToDevice(cv::Mat &X, cv::Mat &Y, cv::Mat &Z) {
+	cv::Mat mask = cv::Mat::ones(X.size(), CV_32F);
+	copySparse3dToDevice(X, Y, Z, mask);
+	
+	return 0;
+}
+
+int sor::ReconFlow::copySparse3dToDevice(cv::Mat &X, cv::Mat &Y, cv::Mat &Z, cv::Mat &spmask) {
+	checkCudaErrors(cudaMemcpy(d_spmask, (float*)spmask.ptr(), dataSize32f, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_Xsp, (float*)X.ptr(), dataSize32f, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_Ysp, (float*)Y.ptr(), dataSize32f, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(d_Zsp, (float*)Z.ptr(), dataSize32f, cudaMemcpyHostToDevice));
 	return 0;
 }
 
@@ -299,7 +337,7 @@ int sor::ReconFlow::solveReconFlow(cv::Mat rot0, cv::Mat tr0, cv::Mat rot1, cv::
 					Swap(d_dumed, d_dumeds, d_dvmed, d_dvmeds);
 				}
 
-				else if (method == METHODR_TVL1_MS_FN) {
+				else if ((method == METHODR_TVL1_MS_FN)|| (method == METHODR_TVL1_MS_FN_LIDAR)) {
 					SolveReconDataL1Fn(d_u, d_v,
 						d_dumed, d_dvmed,
 						d_uproj, d_vproj,
@@ -314,7 +352,7 @@ int sor::ReconFlow::solveReconFlow(cv::Mat rot0, cv::Mat tr0, cv::Mat rot1, cv::
 					Swap(d_dumed, d_dumeds, d_dvmed, d_dvmeds);
 				}
 
-				else if (method == METHODR_TVL1_MS_FNSPARSE) { //sparse flownet
+				else if ((method == METHODR_TVL1_MS_FNSPARSE) || (method == METHODR_TVL1_MS_FNSPARSE_LIDAR)) { //sparse flownet
 					SolveReconDataL1Fn(d_u, d_v,
 						d_dumed, d_dvmed,
 						d_uproj, d_vproj,
@@ -372,6 +410,20 @@ int sor::ReconFlow::solveReconFlow(cv::Mat rot0, cv::Mat tr0, cv::Mat rot1, cv::
 					Swap(d_Y, d_Ys);
 					Swap(d_Z, d_Zs);
 				}
+
+				// 3D constraint with sparse lidar
+				else if ((method == METHODR_TVL1_MS_FNSPARSE_LIDAR) || (method == METHODR_TVL1_MS_FN_LIDAR)) {
+					Solve3dLidar(d_uproj, d_vproj,
+						d_X, d_Y, d_Z,
+						d_Xsp, d_Ysp, d_Zsp,
+						P, Q, lambdaf, lambdams,
+						pW[level], pH[level], pS[level],
+						d_Xs, d_Ys, d_Zs);
+					Swap(d_X, d_Xs);
+					Swap(d_Y, d_Ys);
+					Swap(d_Z, d_Zs);
+				}
+
 				else {
 					Solve3dMinimalArea(d_uproj, d_vproj,
 						d_X, d_Y, d_Z,
