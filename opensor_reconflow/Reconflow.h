@@ -3,7 +3,7 @@
 
 //#include "main.h"
 #include "CudaFlow.h"
-#include <opensor_camerapose/CameraPose.h>
+//#include <opensor_camerapose/CameraPose.h>
 #include <cuda_runtime.h>
 
 namespace sor {
@@ -32,10 +32,16 @@ namespace sor {
 		float *d_Xmed;
 		float *d_Ymed;
 		float *d_Zmed;
+
+		// Sparse 3D
 		float *d_Xsp; //sp means sparse
 		float *d_Ysp;
 		float *d_Zsp;
+		float *d_Xsp_l; //pyramid level
+		float *d_Ysp_l;
+		float *d_Zsp_l;
 		float *d_spmask; //sparse mask
+		float *d_spmask_l; //pyramid level sampled mask
 		
 
 		cv::Mat intrinsic0;
@@ -86,8 +92,8 @@ namespace sor {
 			int nWarpIters, int nSolverIters);
 
 		int copy3dToHost(cv::Mat &X, cv::Mat &Y, cv::Mat &Z);
-		int copySparse3dToDevice(cv::Mat &X, cv::Mat &Y, cv::Mat &Z, cv::Mat &spmask);
-		int copySparse3dToDevice(cv::Mat &X, cv::Mat &Y, cv::Mat &Z);
+		int copySparse3dToDevice(cv::Mat X, cv::Mat Y, cv::Mat Z, cv::Mat spmask);
+		int copySparse3dToDevice(cv::Mat X, cv::Mat Y, cv::Mat Z);
 		int setCameraMatrices(cv::Mat intrinsic);
 		int setCameraMatrices(cv::Mat intrinsic0, cv::Mat intrinsic1);
 
@@ -159,7 +165,7 @@ namespace sor {
 			const float *X0, const float *Y0, const float *Z0,
 			const float *Xsp, const float *Ysp, const float *Zsp,
 			double *P, double *Q, //camera matrices
-			float lambdaf, float lambdams,
+			float lambdaf, float lambdams, float lambdasp, float *spmask,
 			int w, int h, int s,
 			float *X, float *Y, float *Z);
 
@@ -184,6 +190,8 @@ namespace sor {
 			int surfaceWidth, float maxSurfaceArea,
 			int w, int h, int s,
 			float *X1, float *Y1, float *Z1);
+
+		
 	};
 }
 #endif

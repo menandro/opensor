@@ -32,6 +32,7 @@ namespace sor {
 		CudaFlow();
 		CudaFlow(int BlockWidth, int BlockHeight, int StrideAlignment);
 		~CudaFlow();
+		int allocTest();
 		//////////////////////////////////////////////////////////////////////
 		/// OPTICAL FLOW
 		//////////////////////////////////////////////////////////////////////
@@ -293,7 +294,7 @@ namespace sor {
 		//large displacement initial values
 		float *d_ufn; //fn means flownet
 		float *d_vfn;
-		float *d_ufn_l;
+		float *d_ufn_l; // pyramid level flownet
 		float *d_vfn_l;
 		float *d_ufns;
 		float *d_vfns;

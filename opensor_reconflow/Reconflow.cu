@@ -18,16 +18,27 @@ int sor::ReconFlow::initializeR(int width, int height, int channels, int nLevels
 	float alphaTv = 3.0f, float alphaProj = 1.0f, float alphaFn = 0.5f, float tau = 0.25f,
 	int nWarpIters = 1, int nSolverIters = 100)
 {
+	std::cout << "Using flownet and sparse lidar" << std::endl; 
 	this->lambdasp = lambdasp;
 	this->initializeR(width, height, channels, nLevels, scale, method,
 		lambda, lambdagrad, lambdaf, lambdams,
 		alphaTv, alphaProj, alphaFn, tau,
 		nWarpIters, nSolverIters);
 
+	std::cout << "Initializing Sparse Depth pipeline..." << std::endl;
+	std::cout << "*************************************" << std::endl;
+	std::cout << "* lambdasp: " << this->lambdasp << std::endl;
+	std::cout << "**************************************" << std::endl;
+
 	checkCudaErrors(cudaMalloc(&d_Xsp, dataSize));
 	checkCudaErrors(cudaMalloc(&d_Ysp, dataSize));
 	checkCudaErrors(cudaMalloc(&d_Zsp, dataSize));
 	checkCudaErrors(cudaMalloc(&d_spmask, dataSize));
+	checkCudaErrors(cudaMalloc(&d_Xsp_l, dataSize));
+	checkCudaErrors(cudaMalloc(&d_Ysp_l, dataSize));
+	checkCudaErrors(cudaMalloc(&d_Zsp_l, dataSize));
+	checkCudaErrors(cudaMalloc(&d_spmask_l, dataSize));
+
 	return 0;
 }
 
@@ -36,11 +47,17 @@ int sor::ReconFlow::initializeR(int width, int height, int channels, int nLevels
 	float lambda = 100.0f, float lambdagrad = 400.0f, float lambdaf = 100.0f, float lambdams = 100.0f,
 	float alphaTv = 3.0f, float alphaProj = 1.0f, float alphaFn = 0.5f, float tau = 0.25f,
 	int nWarpIters = 1, int nSolverIters = 100) {
+
 	this->alphaFn = alphaFn;
+	
 	this->_initializeR(width, height, channels, nLevels, scale, method,
 		lambda, lambdagrad, lambdaf, lambdams,
 		alphaTv, alphaProj, tau,
 		nWarpIters, nSolverIters);
+	std::cout << "Initializing Large Displacement pipeline..." << std::endl;
+	std::cout << "*************************************" << std::endl;
+	std::cout << "* alphaFn: " << this->alphaFn << std::endl;
+	std::cout << "**************************************" << std::endl;
 	return this->initializeLargeDisplacement();
 }
 
@@ -58,6 +75,15 @@ int sor::ReconFlow::_initializeR(int width, int height, int channels, int nLevel
 	this->alphaTv = alphaTv;
 	this->lambdaf = lambdaf;
 	this->lambdams = lambdams;
+
+	std::cout << "Initializing Reconstruction pipeline..." << std::endl;
+	std::cout << "*************************************" << std::endl;
+	std::cout << "* thetaTv: " << this->thetaTv << std::endl;
+	std::cout << "* alphaProj: " << this->alphaProj << std::endl;
+	std::cout << "* alphaTv: " << this->alphaTv << std::endl;
+	std::cout << "* lambdaf: " << this->lambdaf << std::endl;
+	std::cout << "* lambdams: " << this->lambdams << std::endl;
+	std::cout << "**************************************" << std::endl;
 
 	checkCudaErrors(cudaMalloc(&d_X, dataSize));
 	checkCudaErrors(cudaMalloc(&d_Y, dataSize));
@@ -89,17 +115,14 @@ int sor::ReconFlow::copy3dToHost(cv::Mat &X, cv::Mat &Y, cv::Mat &Z) {
 	return 0;
 }
 
-
-
 // Copy sparse lidar data (converted to cv matrix, separated by xyz channel) to GPU
-int sor::ReconFlow::copySparse3dToDevice(cv::Mat &X, cv::Mat &Y, cv::Mat &Z) {
+int sor::ReconFlow::copySparse3dToDevice(cv::Mat X, cv::Mat Y, cv::Mat Z) {
 	cv::Mat mask = cv::Mat::ones(X.size(), CV_32F);
 	copySparse3dToDevice(X, Y, Z, mask);
-	
 	return 0;
 }
 
-int sor::ReconFlow::copySparse3dToDevice(cv::Mat &X, cv::Mat &Y, cv::Mat &Z, cv::Mat &spmask) {
+int sor::ReconFlow::copySparse3dToDevice(cv::Mat X, cv::Mat Y, cv::Mat Z, cv::Mat spmask) {
 	checkCudaErrors(cudaMemcpy(d_spmask, (float*)spmask.ptr(), dataSize32f, cudaMemcpyHostToDevice));
 	checkCudaErrors(cudaMemcpy(d_Xsp, (float*)X.ptr(), dataSize32f, cudaMemcpyHostToDevice));
 	checkCudaErrors(cudaMemcpy(d_Ysp, (float*)Y.ptr(), dataSize32f, cudaMemcpyHostToDevice));
@@ -146,8 +169,8 @@ int sor::ReconFlow::setCameraMatrices(cv::Mat intrinsic0, cv::Mat intrinsic1) {
 		pK1[level].at<double>(0, 2) = pK1[level - 1].at<double>(0, 2) / this->fScale; //camMidX
 		pK1[level].at<double>(1, 1) = pK1[level - 1].at<double>(1, 1) / this->fScale; //focal
 		pK1[level].at<double>(1, 2) = pK1[level - 1].at<double>(1, 2) / this->fScale; //camMidY
-																					  //std::cout << pK0[level].at<double>(0, 0) << " " << pK0[level].at<double>(0, 2) << " " << pK0[level].at<double>(1, 2) << std::endl;
-																					  //std::cout << pK1[level].at<double>(0, 0) << " " << pK1[level].at<double>(0, 2) << " " << pK1[level].at<double>(1, 2) << std::endl;
+		//std::cout << pK0[level].at<double>(0, 0) << " " << pK0[level].at<double>(0, 2) << " " << pK0[level].at<double>(1, 2) << std::endl;
+		//std::cout << pK1[level].at<double>(0, 0) << " " << pK1[level].at<double>(0, 2) << " " << pK1[level].at<double>(1, 2) << std::endl;
 	}
 
 	return 0;
@@ -268,13 +291,19 @@ int sor::ReconFlow::solveReconFlow(cv::Mat rot0, cv::Mat tr0, cv::Mat rot1, cv::
 		double *K1 = (double*)pK1[level].ptr();
 		
 
-		if ((method == METHODR_TVL1_MS_FN) || (method == METHODR_TVL1_MS_FNSPARSE)) {
+		if ((method == METHODR_TVL1_MS_FN) || (method == METHODR_TVL1_MS_FNSPARSE) ||
+			(method == METHODR_TVL1_MS_FNSPARSE_LIDAR) || (method == METHODR_TVL1_MS_FN_LIDAR)) {
 			//downscale ufn and vfn
 			//std::cout << level << std::endl;
 			float scale = (float)pW[level] / (float)pW[0];
+			if ((method == METHODR_TVL1_MS_FNSPARSE_LIDAR) || (method == METHODR_TVL1_MS_FN_LIDAR)) {
+				Downscale(d_spmask, pW[0], pH[0], pS[0], pW[level], pH[level], pS[level], d_spmask_l);
+			}
+			Downscale(d_fnmask, pW[0], pH[0], pS[0], pW[level], pH[level], pS[level], d_fnmask_l);
 			Downscale(d_ufn, pW[0], pH[0], pS[0], pW[level], pH[level], pS[level], scale, d_ufn_l);
 			Downscale(d_vfn, pW[0], pH[0], pS[0], pW[level], pH[level], pS[level], scale, d_vfn_l);
-			Downscale(d_fnmask, pW[0], pH[0], pS[0], pW[level], pH[level], pS[level], d_fnmask_l);
+			
+			
 			//std::cout << "herex" << std::endl;
 			//Swap(d_ufn_l, d_ufns, d_vfn_l, d_vfns);
 		}
@@ -415,8 +444,8 @@ int sor::ReconFlow::solveReconFlow(cv::Mat rot0, cv::Mat tr0, cv::Mat rot1, cv::
 				else if ((method == METHODR_TVL1_MS_FNSPARSE_LIDAR) || (method == METHODR_TVL1_MS_FN_LIDAR)) {
 					Solve3dLidar(d_uproj, d_vproj,
 						d_X, d_Y, d_Z,
-						d_Xsp, d_Ysp, d_Zsp,
-						P, Q, lambdaf, lambdams,
+						d_Xsp_l, d_Ysp_l, d_Zsp_l,
+						P, Q, lambdaf, lambdams, lambdasp, d_spmask_l,
 						pW[level], pH[level], pS[level],
 						d_Xs, d_Ys, d_Zs);
 					Swap(d_X, d_Xs);

@@ -122,5 +122,8 @@
     <CudaCompile Include="warpImage.cu">
       <Filter>Kernel Files</Filter>
     </CudaCompile>
+    <CudaCompile Include="solve3dLidar.cu">
+      <Filter>Kernel Files</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>

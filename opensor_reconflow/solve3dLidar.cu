@@ -10,7 +10,7 @@ void Solve3dLidarKernel(const float *uproj0, const float *vproj0,
 	float Q11, float Q12, float Q13, float Q14,
 	float Q21, float Q22, float Q23, float Q24,
 	float Q31, float Q32, float Q33, float Q34,
-	float lambdaf, float lambdams,
+	float lambdaf, float lambdams, float lambdasp, float* spmask,
 	int width, int height, int stride,
 	float *X, float *Y, float *Z)
 {
@@ -208,7 +208,7 @@ void sor::ReconFlow::Solve3dLidar(const float *uproj0, const float *vproj0,
 	const float *X0, const float *Y0, const float *Z0,
 	const float *Xsp, const float *Ysp, const float *Zsp,
 	double *P, double *Q, //camera matrices
-	float lambdaf, float lambdams,
+	float lambdaf, float lambdams, float lambdasp, float *spmask,
 	int w, int h, int s,
 	float *X, float *Y, float *Z)
 {
@@ -247,7 +247,7 @@ void sor::ReconFlow::Solve3dLidar(const float *uproj0, const float *vproj0,
 		Xsp, Ysp, Zsp,
 		P11, P12, P13, P14, P21, P22, P23, P24, P31, P32, P33, P34,
 		Q11, Q12, Q13, Q14, Q21, Q22, Q23, Q24, Q31, Q32, Q33, Q34,
-		lambdaf, lambdams,
+		lambdaf, lambdams, lambdasp, spmask,
 		w, h, s,
 		X, Y, Z);
 }

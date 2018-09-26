@@ -61,7 +61,8 @@ void sor::CudaFlow::Downscale(const float *src, int width, int height, int strid
 
 	cudaChannelFormatDesc desc = cudaCreateChannelDesc<float>();
 
-	checkCudaErrors(cudaBindTexture2D(0, texFine, src, width, height, stride * sizeof(float)));
+	size_t offset;
+	checkCudaErrors(cudaBindTexture2D(&offset, texFine, src, desc, width, height, stride * sizeof(float)));
 
 	DownscaleKernel <<< blocks, threads >>>(newWidth, newHeight, newStride, out);
 }
@@ -80,7 +81,8 @@ void sor::CudaFlow::Downscale(const float *src, int width, int height, int strid
 
 	cudaChannelFormatDesc desc = cudaCreateChannelDesc<float>();
 
-	checkCudaErrors(cudaBindTexture2D(0, texFine, src, width, height, stride * sizeof(float)));
+	size_t offset;
+	checkCudaErrors(cudaBindTexture2D(&offset, texFine, src, desc, width, height, stride * sizeof(float)));
 
 	DownscaleScalingKernel << < blocks, threads >> >(newWidth, newHeight, newStride, scale, out);
 }

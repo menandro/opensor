@@ -13,6 +13,12 @@ sor::CudaFlow::CudaFlow(int BlockWidth, int BlockHeight, int StrideAlignment) {
 	this->StrideAlignment = StrideAlignment;
 }
 
+int sor::CudaFlow::allocTest() {
+	float * test;
+	checkCudaErrors(cudaMalloc(&test, 100));
+	return 0;
+}
+
 int sor::CudaFlow::initialize(int width, int height, int channels, int nLevels, float scale, int method,
 	float lambda = 100.0f, float lambdagrad = 400.0f, float theta = 0.33f, float tau = 0.25f,
 	int nWarpIters = 1, int nSolverIters = 100)
@@ -120,12 +126,30 @@ int sor::CudaFlow::initialize(int width, int height, int channels, int cvType, i
 
 	this->withVisualization = withVisualization;
 
+	std::cout << "Initializing Optical Flow pipeline..." << std::endl;
+	std::cout << "*************************************" << std::endl;
+	std::cout << "* width: " << this->width << std::endl;
+	std::cout << "* height: " << this->height<< std::endl;
+	std::cout << "* stride: " << this->stride << std::endl;
+	std::cout << "* inputType: " << this->inputType << std::endl;
+	std::cout << "* fScale: " << this->fScale << std::endl;
+	std::cout << "* nLevels: " << this->nLevels << std::endl;
+	std::cout << "* method: " << this->method << std::endl;
+	std::cout << "* inputChannels: " << this->inputChannels << std::endl;
+	std::cout << "* nSolverIters: " << this->nSolverIters << std::endl;
+	std::cout << "* nWarpIters: " << this->nWarpIters << std::endl;
+	std::cout << "* lambda: " << this->lambda << std::endl;
+	std::cout << "* lambdagrad: " << this->lambdagrad << std::endl;
+	std::cout << "* theta: " << this->theta << std::endl;
+	std::cout << "* tau: " << this->tau << std::endl;
+	std::cout << "* withVisualization: " << this->withVisualization << std::endl;
+	std::cout << "**************************************" << std::endl;
 
 	//this->BlockWidth = 32;
 	//this->BlockHeight = 6;
 	//this->StrideAlignment = 32;
 	//pyramids
-
+	
 	pI0 = std::vector<float*>(nLevels);
 	pI1 = std::vector<float*>(nLevels);
 	if (method == METHOD_TVCHARBGRAD) {
@@ -146,9 +170,11 @@ int sor::CudaFlow::initialize(int width, int height, int channels, int cvType, i
 	int newHeight = height;
 	int newWidth = width;
 	int newStride = iAlignUp(width);
-	//std::cout << "Pyramid Sizes: " << newWidth << " " << newHeight << " " << newStride << std::endl;
+	
+	std::cout << "Pyramid Sizes: " << nLevels << " " << newWidth << " " << newHeight << " " << newStride << std::endl;
 	for (int level = 0; level < nLevels; level++) {
 		pDataSize[level] = newStride * newHeight * sizeof(float);
+		std::cout << "Data Size: " << pDataSize[level] << std::endl;
 		checkCudaErrors(cudaMalloc(&pI0[level], pDataSize[level]));
 		checkCudaErrors(cudaMalloc(&pI1[level], pDataSize[level]));
 		if ((method == METHOD_TVCHARBGRAD) || (method == METHOD_TVCHARBGRAD_FN)) {
