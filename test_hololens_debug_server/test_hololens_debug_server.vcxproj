@@ -23,7 +23,7 @@
     <ProjectGuid>{32473934-1602-4EE1-900A-F75728F1A7FE}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>testhololensdebugserver</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -72,9 +72,9 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <ExecutablePath>D:\dev\bin;$(ExecutablePath)</ExecutablePath>
-    <IncludePath>D:\dev\include;D:\dev\c-projects\OpenSor;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\dev\lib64;$(LibraryPath)</LibraryPath>
+    <ExecutablePath>$(ExecutablePath)</ExecutablePath>
+    <IncludePath>D:\dev\staticinclude;D:\dev\c-projects\OpenSor;$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
