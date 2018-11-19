@@ -84,7 +84,15 @@ void Solve3dMinimalAreaKernel(const float *uproj0, const float *vproj0,
 			Zy = Z0[ix + (iy + 1) * stride] - Z0[pos];
 		}
 
-		float lambetams = lambdams / sqrt((Yx*Zy - Zx*Yy)*(Yx*Zy - Zx*Yy) + (Zx*Xy - Xx*Zy)*(Zx*Xy - Xx*Zy) + (Xx*Yy - Yx*Xy)*(Xx*Yy - Yx*Xy) + 0.001f);
+		float divisor = sqrt((Yx*Zy - Zx * Yy)*(Yx*Zy - Zx * Yy) + (Zx*Xy - Xx * Zy)*(Zx*Xy - Xx * Zy) + (Xx*Yy - Yx * Xy)*(Xx*Yy - Yx * Xy));
+		float lambetams;
+		if (divisor != 0.0f) {
+			lambetams = lambdams / sqrt((Yx*Zy - Zx * Yy)*(Yx*Zy - Zx * Yy) + (Zx*Xy - Xx * Zy)*(Zx*Xy - Xx * Zy)
+				+ (Xx*Yy - Yx * Xy)*(Xx*Yy - Yx * Xy) + 0.001f);
+		}
+		else {
+			lambetams = 0.0f;
+		}
 
 		//Solve Xbars, Ybars and Zbars
 		float Xibar, Yibar, Zibar, Xjbar, Yjbar, Zjbar;

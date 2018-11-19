@@ -17,9 +17,13 @@ void Solve3dLidarKernel(const float *uproj0, const float *vproj0,
 	int ix = blockIdx.x * blockDim.x + threadIdx.x;
 	int iy = blockIdx.y * blockDim.y + threadIdx.y;        // current row 
 
+	float lambdasparse;
+
 	if ((iy < height) && (ix < width))
 	{
 		int pos = ix + iy * stride;
+
+		lambdasparse = lambdasp * spmask[pos];
 
 		float x1 = ix;
 		float y1 = iy;
@@ -122,15 +126,15 @@ void Solve3dLidarKernel(const float *uproj0, const float *vproj0,
 		}
 
 
-		float a11 = ax + lambetams * (Yx*Yx + Zx * Zx + Yy * Yy + Zy * Zy);
+		float a11 = ax + lambetams * (Yx*Yx + Zx * Zx + Yy * Yy + Zy * Zy) + lambdasparse;
 		float a12 = bx - lambetams * (Xx*Yx + Xy * Yy);
 		float a13 = cx - lambetams * (Xx*Zx + Xy * Zy);
 		float a21 = ay - lambetams * (Xx*Yx + Xy * Yy);
-		float a22 = by + lambetams * (Xx*Xx + Zx * Zx + Xy * Xy + Zy * Zy);
+		float a22 = by + lambetams * (Xx*Xx + Zx * Zx + Xy * Xy + Zy * Zy) + lambdasparse;
 		float a23 = cy - lambetams * (Yx*Zx + Yy * Zy);
 		float a31 = az - lambetams * (Xx*Zx + Xy * Zy);
 		float a32 = bz - lambetams * (Yx*Zx + Yy * Zy);
-		float a33 = cz + lambetams * (Xx*Xx + Yx * Yx + Xy * Xy + Yy * Yy);
+		float a33 = cz + lambetams * (Xx*Xx + Yx * Yx + Xy * Xy + Yy * Yy) + lambdasparse;
 
 		float detA = a11 * (a22*a33 - a23 * a32) - a12 * (a21*a33 - a23 * a31) + a13 * (a21*a32 - a22 * a31);
 
@@ -144,15 +148,18 @@ void Solve3dLidarKernel(const float *uproj0, const float *vproj0,
 		float E32 = a12 * a31 - a11 * a32;
 		float E33 = a11 * a22 - a12 * a21;
 
-		float b1 = lambetams * ((Zy*Zy + Yy * Yy)*Xibar + (Zx*Zx + Yx * Yx)*Xjbar
+		float b1 = lambdasparse * Xsp[pos] 
+			+ lambetams * ((Zy*Zy + Yy * Yy)*Xibar + (Zx*Zx + Yx * Yx)*Xjbar
 			- (Xy*Yy)*Yibar - (Xx*Yx)*Yjbar
 			- (Xy*Zy)*Zibar - (Xx*Zx)*Zjbar)
 			- dx;
-		float b2 = lambetams * (-(Xy*Yy)*Xibar - (Xx*Yx)*Xjbar
+		float b2 = lambdasparse * Ysp[pos]
+			+ lambetams * (-(Xy*Yy)*Xibar - (Xx*Yx)*Xjbar
 			+ (Xy*Xy + Zy * Zy)*Yibar + (Xx*Xx + Zx * Zx)*Yjbar
 			- (Yy*Zy)*Zibar - (Yx*Zx)*Zjbar)
 			- dy;
-		float b3 = lambetams * (-(Xy*Zy)*Xibar - (Xx*Zx)*Xjbar
+		float b3 = lambdasparse * Zsp[pos]
+			+ lambetams * (-(Xy*Zy)*Xibar - (Xx*Zx)*Xjbar
 			- (Yy*Zy)*Yibar - (Yx*Zx)*Yjbar
 			+ (Xy*Xy + Yy * Yy)*Zibar + (Xx*Xx + Yx * Yx)*Zjbar)
 			- dz;

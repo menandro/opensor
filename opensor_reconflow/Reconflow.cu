@@ -298,6 +298,9 @@ int sor::ReconFlow::solveReconFlow(cv::Mat rot0, cv::Mat tr0, cv::Mat rot1, cv::
 			float scale = (float)pW[level] / (float)pW[0];
 			if ((method == METHODR_TVL1_MS_FNSPARSE_LIDAR) || (method == METHODR_TVL1_MS_FN_LIDAR)) {
 				Downscale(d_spmask, pW[0], pH[0], pS[0], pW[level], pH[level], pS[level], d_spmask_l);
+				Downscale(d_Xsp, pW[0], pH[0], pS[0], pW[level], pH[level], pS[level], d_Xsp_l);
+				Downscale(d_Ysp, pW[0], pH[0], pS[0], pW[level], pH[level], pS[level], d_Ysp_l);
+				Downscale(d_Zsp, pW[0], pH[0], pS[0], pW[level], pH[level], pS[level], d_Zsp_l);
 			}
 			Downscale(d_fnmask, pW[0], pH[0], pS[0], pW[level], pH[level], pS[level], d_fnmask_l);
 			Downscale(d_ufn, pW[0], pH[0], pS[0], pW[level], pH[level], pS[level], scale, d_ufn_l);

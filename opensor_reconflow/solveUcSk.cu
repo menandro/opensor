@@ -57,7 +57,9 @@ void sor::ReconFlow::SolveUc(const float *X0, const float *Y0, const float *Z0,
 	//std::cout << R11 << " " << R12 << " " << R13 << std::endl;
 	//std::cout << R21 << " " << R22 << " " << R23 << std::endl;
 	//std::cout << R31 << " " << R32 << " " << R33 << std::endl;
+	//std::cout << t1 << " " << t2 << " " << t3 << std::endl;
 	//std::cout << focals << " " << camMidXs << " " << camMidYs << std::endl;
+	//cv::waitKey();
 	// CTA size
 	dim3 threads(BlockWidth, BlockHeight);
 	// grid size
